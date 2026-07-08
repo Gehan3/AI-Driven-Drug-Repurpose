@@ -3,12 +3,10 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
 
 interface Props {
-  dreamwalk: number
-  xgboost: number
-  txgnn: number
+  components: { name: string; value: number }[]
 }
 
-const COLORS = ["#0F766E", "#14B8A6", "#2563EB"]
+const COLORS = ["#DC2626", "#7C3AED", "#0891B2", "#16A34A"]
 
 const RADIAN = Math.PI / 180
 const renderCustomizedLabel = ({
@@ -43,12 +41,8 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null
 }
 
-export function ProbabilityDistribution({ dreamwalk, xgboost, txgnn }: Props) {
-  const data = [
-    { name: "DREAMwalk", value: dreamwalk },
-    { name: "XGBoost", value: xgboost },
-    { name: "TxGNN", value: txgnn },
-  ]
+export function ProbabilityDistribution({ components }: Props) {
+  const data = components
 
   return (
     <div className="w-full h-72">

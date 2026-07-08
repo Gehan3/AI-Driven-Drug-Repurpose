@@ -29,6 +29,12 @@ export function ResultsSection({ result }: Props) {
       ? `Diseases associated with ${source?.name ?? result.input.drugName}`
       : `Drugs associated with ${source?.name ?? result.input.diseaseName}`
 
+  const graphNodeCount = result.graphNodes?.length ?? 0
+  const graphEdgeCount = result.graphEdges?.length ?? 0
+  const pathwayCount = top.pathways.length
+  const hasSupportingGenes = top.supportingGenes.length > 0
+  const hasEvidenceComponents = top.modelSources.length > 0
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -36,23 +42,6 @@ export function ResultsSection({ result }: Props) {
       transition={{ duration: 0.6 }}
       className="space-y-6"
     >
-      {result._simulated && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl"
-        >
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-            </svg>
-            <span className="text-sm font-medium text-amber-800">
-              Simulated Result — Backend API is not available. These are not real model predictions.
-            </span>
-          </div>
-        </motion.div>
-      )}
-
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Prediction Results</h2>
@@ -65,16 +54,26 @@ export function ResultsSection({ result }: Props) {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
-          className={`px-4 py-2 rounded-xl ${
-            result._simulated
-              ? "bg-amber-50 border border-amber-200"
-              : "bg-green-50 border border-green-100"
-          }`}
+          className="px-4 py-2 rounded-xl bg-green-50 border border-green-100"
         >
-          <span className={`text-sm font-semibold ${result._simulated ? "text-amber-700" : "text-green-700"}`}>
-            {result._simulated ? "Simulated" : "Complete"}
+          <span className="text-sm font-semibold text-green-700">
+            Hetionet Data
           </span>
         </motion.div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        {[
+          ["Source", "Hetionet graph"],
+          ["Graph Nodes", graphNodeCount.toString()],
+          ["Graph Edges", graphEdgeCount.toString()],
+          ["Pathways", pathwayCount.toString()],
+        ].map(([labelText, value]) => (
+          <div key={labelText} className="rounded-xl border border-border/60 bg-white/70 px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">{labelText}</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
+          </div>
+        ))}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -106,9 +105,9 @@ export function ResultsSection({ result }: Props) {
             </div>
           </div>
 
-          {top.modelSources.length > 0 && (
+          {hasEvidenceComponents && (
             <div>
-              <h4 className="text-sm font-semibold text-foreground mb-2">Model Sources</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-2">Evidence Components</h4>
               <div className="space-y-2">
                 {top.modelSources.map((ms) => (
                   <div key={ms.name} className="flex items-center justify-between p-3 bg-white/60 rounded-xl">
@@ -128,7 +127,7 @@ export function ResultsSection({ result }: Props) {
 
         <GlassCard className="p-6">
           <h4 className="text-sm font-semibold text-foreground mb-4">
-            {mode === "both" ? "AI Explanation" : "Hetionet Evidence"}
+            Hetionet Evidence
           </h4>
           <p className="text-sm text-muted leading-relaxed">
             {top.explanation}
@@ -172,28 +171,34 @@ export function ResultsSection({ result }: Props) {
 
         <GlassCard className="p-6">
           <h4 className="text-sm font-semibold text-foreground mb-4">Gene Importance</h4>
-          <GeneImportanceChart
-            genes={top.supportingGenes.length > 0
-              ? top.supportingGenes.map((g, i) => ({
-                  gene: g,
-                  importance: 0.95 - i * 0.04,
-                }))
-              : [
-                  { gene: "PRKAA1", importance: 0.92 },
-                  { gene: "STK11", importance: 0.87 },
-                  { gene: "PRKAB1", importance: 0.81 },
-                ]
-            }
-          />
+          {hasSupportingGenes ? (
+            <GeneImportanceChart
+              genes={top.supportingGenes.map((g, i) => ({
+                gene: g,
+                importance: Math.max(0.95 - i * 0.04, 0.1),
+              }))}
+            />
+          ) : (
+            <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-border/70 bg-white/50 px-4 text-center text-sm text-muted">
+              No supporting gene list was returned for this top result. Check the pathway graph for available graph evidence.
+            </div>
+          )}
         </GlassCard>
 
         <GlassCard className="p-6">
-          <h4 className="text-sm font-semibold text-foreground mb-4">Model Contribution</h4>
-          <ProbabilityDistribution
-            dreamwalk={top.modelSources.find((m) => m.name === "DREAMwalk")?.contribution || 0.33}
-            xgboost={top.modelSources.find((m) => m.name === "XGBoost")?.contribution || 0.33}
-            txgnn={top.modelSources.find((m) => m.name === "TxGNN")?.contribution || 0.34}
-          />
+          <h4 className="text-sm font-semibold text-foreground mb-4">Evidence Contribution</h4>
+          {hasEvidenceComponents ? (
+            <ProbabilityDistribution
+              components={top.modelSources.map((m) => ({
+                name: m.name,
+                value: m.contribution,
+              }))}
+            />
+          ) : (
+            <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-border/70 bg-white/50 px-4 text-center text-sm text-muted">
+              No evidence component breakdown was returned for this result.
+            </div>
+          )}
         </GlassCard>
 
         <GlassCard className="p-6">

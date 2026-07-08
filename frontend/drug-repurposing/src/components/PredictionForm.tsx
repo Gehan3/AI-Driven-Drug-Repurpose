@@ -102,7 +102,7 @@ export function PredictionForm({ onPredict, loading }: Props) {
               </div>
             </div>
             {showDrugSuggestions && drugSuggestions.length > 0 && (
-              <div className="absolute z-20 w-full mt-1 py-2 bg-white border border-border/60 rounded-xl shadow-lg">
+              <div className="absolute z-20 w-full mt-1 py-2 bg-white border border-border/60 rounded-xl shadow-lg max-h-64 overflow-y-auto">
                 {drugSuggestions.map((d) => (
                   <button
                     key={d}
@@ -133,7 +133,7 @@ export function PredictionForm({ onPredict, loading }: Props) {
               />
             </div>
             {showDiseaseSuggestions && diseaseSuggestions.length > 0 && (
-              <div className="absolute z-20 w-full mt-1 py-2 bg-white border border-border/60 rounded-xl shadow-lg">
+              <div className="absolute z-20 w-full mt-1 py-2 bg-white border border-border/60 rounded-xl shadow-lg max-h-64 overflow-y-auto">
                 {diseaseSuggestions.map((d) => (
                   <button
                     key={d}

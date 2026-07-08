@@ -1,8 +1,6 @@
-import { generateMockPrediction } from "@/lib/mock-data"
 import type { PredictionInput, PredictionResult } from "@/types"
 
 const API_BASE = import.meta.env.VITE_API_URL || ""
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true"
 
 function validateEntityTypes(result: PredictionResult, input: PredictionInput): void {
   const onlyDrug = !!input.drugName && !input.diseaseName
@@ -42,13 +40,6 @@ function validateEntityTypes(result: PredictionResult, input: PredictionInput): 
 export async function predictDrugRepurposing(
   input: PredictionInput
 ): Promise<PredictionResult> {
-  if (USE_MOCK) {
-    console.warn("[MOCK MODE] VITE_USE_MOCK=true — returning simulated data")
-    const mockResult = generateMockPrediction(input)
-    validateEntityTypes(mockResult, input)
-    return mockResult
-  }
-
   if (!API_BASE) {
     throw new Error(
       "Backend API URL is not configured (VITE_API_URL). " +

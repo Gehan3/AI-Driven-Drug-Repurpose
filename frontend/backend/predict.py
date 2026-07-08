@@ -3,7 +3,7 @@ import json
 import re
 import pickle
 import time
-import pandas as pd
+from datetime import datetime
 from pathlib import Path
 
 HETIONET_DIR = Path(__file__).resolve().parent.parent / "hetionet-data" / "hetnet" / "tsv"
@@ -15,6 +15,14 @@ def log(msg):
 
 
 def load_hetionet():
+    try:
+        import pandas as pd
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "pandas is required only to rebuild graph_cache.pkl from Hetionet TSV files. "
+            "Install backend/requirements.txt or restore hetionet-data/hetnet/tsv/graph_cache.pkl."
+        ) from exc
+
     nodes = pd.read_csv(
         HETIONET_DIR / "hetionet-v1.0-nodes.tsv",
         sep="\t",
@@ -27,6 +35,14 @@ def load_hetionet():
         low_memory=False,
     )
     return nodes, edges
+
+
+def prediction_id():
+    return "pred_" + str(time.time_ns())
+
+
+def timestamp_now():
+    return datetime.now().isoformat(sep=" ", timespec="microseconds")
 
 
 def get_graph():
@@ -235,13 +251,13 @@ def build_pathway_graph(drug_id, disease_id, g, max_genes=6, max_pathways=4):
 
 
 def make_model_sources(confidence):
-    dreamwalk = round(min(0.33 + confidence * 0.12, 0.45), 2)
-    txgnn = round(min(0.32 + confidence * 0.08, 0.40), 2)
-    xgb = round(max(1.0 - dreamwalk - txgnn, 0.15), 2)
+    direct_graph = round(min(0.40 + confidence * 0.10, 0.50), 2)
+    pathway = round(min(0.30 + confidence * 0.08, 0.38), 2)
+    network = round(max(1.0 - direct_graph - pathway, 0.12), 2)
     return [
-        {"name": "DREAMwalk", "contribution": dreamwalk, "description": "Graph embedding similarity"},
-        {"name": "TxGNN", "contribution": txgnn, "description": "Foundation model inference"},
-        {"name": "XGBoost", "contribution": xgb, "description": "Feature-based classification"},
+        {"name": "Direct Graph Evidence", "contribution": direct_graph, "description": "Direct Hetionet treatment or association edges"},
+        {"name": "Pathway Connectivity", "contribution": pathway, "description": "Shared gene-pathway relationships in Hetionet"},
+        {"name": "Network Support", "contribution": network, "description": "Aggregated graph traversal support"},
     ]
 
 
@@ -380,7 +396,12 @@ def find_diseases_for_drug(drug_name, g, top_k):
     top_temp = compute_similar_entities(drug_id, "disease", top_temp, g, top_k)
     top_candidates = [finalize_candidate(cd) for cd in top_temp]
 
-    nodes, edges = build_pathway_graph(drug_id, None, g)
+    top_disease_id = None
+    if top_temp:
+        top_disease = find_entity(top_temp[0]["entityName"], g["disease_by_name"])
+        top_disease_id = top_disease["id"] if top_disease else None
+
+    nodes, edges = build_pathway_graph(drug_id, top_disease_id, g)
 
     return top_candidates, drug, nodes, edges
 
@@ -467,7 +488,12 @@ def find_drugs_for_disease(disease_name, g, top_k):
     top_temp = compute_similar_entities(disease_id, "drug", top_temp, g, top_k)
     top_candidates = [finalize_candidate(cd) for cd in top_temp]
 
-    nodes, edges = build_pathway_graph(None, disease_id, g)
+    top_drug_id = None
+    if top_temp:
+        top_drug = find_entity(top_temp[0]["entityName"], g["drug_by_name"])
+        top_drug_id = top_drug["id"] if top_drug else None
+
+    nodes, edges = build_pathway_graph(top_drug_id, disease_id, g)
 
     return top_candidates, disease, nodes, edges
 
@@ -536,7 +562,7 @@ def find_pair_prediction(drug_name, disease_name, g, top_k, threshold):
             "similarEntities": [],
         }
         return {
-            "id": "pred_" + str(pd.Timestamp.now().value),
+            "id": prediction_id(),
             "predictions": [empty_pred],
             "topPrediction": empty_pred,
             "modelEnsembleScore": 0.0,
@@ -613,7 +639,7 @@ def find_pair_prediction(drug_name, disease_name, g, top_k, threshold):
     nodes, edges = build_pathway_graph(drug_id, disease_id, g)
 
     return {
-        "id": "pred_" + str(pd.Timestamp.now().value),
+        "id": prediction_id(),
         "predictions": [pred],
         "topPrediction": pred,
         "modelEnsembleScore": round(confidence, 3),
@@ -673,7 +699,7 @@ def main():
                     pred["similarEntities"] = r["similarEntities"]
                 predictions.append(pred)
             result = {
-                "id": "pred_" + str(pd.Timestamp.now().value),
+                "id": prediction_id(),
                 "mode": mode,
                 "sourceEntity": {"name": entity["name"], "type": "drug"} if entity else {"name": drug_name, "type": "drug"},
                 "predictions": predictions,
@@ -707,7 +733,7 @@ def main():
                     pred["similarEntities"] = r["similarEntities"]
                 predictions.append(pred)
             result = {
-                "id": "pred_" + str(pd.Timestamp.now().value),
+                "id": prediction_id(),
                 "mode": mode,
                 "sourceEntity": {"name": entity["name"], "type": "disease"} if entity else {"name": disease_name, "type": "disease"},
                 "predictions": predictions,
@@ -732,7 +758,7 @@ def main():
             "topK": top_k,
             "mode": mode,
         }
-        result["timestamp"] = str(pd.Timestamp.now())
+        result["timestamp"] = timestamp_now()
         result["graphNodes"] = graph_nodes
         result["graphEdges"] = graph_edges
 

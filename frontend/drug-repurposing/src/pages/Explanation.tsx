@@ -140,9 +140,11 @@ export default function Explanation() {
               <GlassCard className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Model Contributions</h3>
                 <ProbabilityDistribution
-                  dreamwalk={explanation.confidenceBreakdown.dreamwalk}
-                  xgboost={explanation.confidenceBreakdown.xgboost}
-                  txgnn={explanation.confidenceBreakdown.txgnn}
+                  components={[
+                    { name: "DREAMwalk", value: explanation.confidenceBreakdown.dreamwalk },
+                    { name: "XGBoost", value: explanation.confidenceBreakdown.xgboost },
+                    { name: "TxGNN", value: explanation.confidenceBreakdown.txgnn },
+                  ]}
                 />
                 <div className="mt-6 space-y-3">
                   {explanation.modelContributions.map((mc) => (

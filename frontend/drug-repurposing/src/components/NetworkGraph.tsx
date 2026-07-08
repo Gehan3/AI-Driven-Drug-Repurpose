@@ -5,7 +5,8 @@ import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
+  Handle,
+  Position,
   type Node,
   type Edge,
   type NodeTypes,
@@ -15,10 +16,16 @@ import "@xyflow/react/dist/style.css"
 import type { GraphNode as GraphNodeType, GraphEdge as GraphEdgeType } from "@/types"
 
 const NODE_COLORS: Record<string, string> = {
-  drug: "#0F766E",
+  drug: "#DC2626",
+  gene: "#16A34A",
+  pathway: "#7C3AED",
   disease: "#2563EB",
-  gene: "#14B8A6",
-  pathway: "#6366F1",
+}
+
+const EDGE_COLORS: Record<string, string> = {
+  binds: "#F97316",
+  participates: "#7C3AED",
+  associates: "#0891B2",
 }
 
 const NODE_ICONS: Record<string, string> = {
@@ -31,18 +38,22 @@ const NODE_ICONS: Record<string, string> = {
 function CustomNode({ data }: { data: any }) {
   const color = NODE_COLORS[data.nodeType] || "#64748B"
   return (
-    <div
-      className="px-4 py-2 rounded-2xl shadow-md border-2 text-white text-xs font-medium whitespace-nowrap"
-      style={{
-        backgroundColor: color,
-        borderColor: color + "80",
-      }}
-    >
-      {NODE_ICONS[data.nodeType] && (
-        <span className="mr-1.5">{NODE_ICONS[data.nodeType]}</span>
-      )}
-      {data.label}
-    </div>
+    <>
+      <Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-slate-400 !border-white" />
+      <div
+        className="px-4 py-2 rounded-lg shadow-md border-2 text-white text-xs font-medium whitespace-nowrap"
+        style={{
+          backgroundColor: color,
+          borderColor: color + "80",
+        }}
+      >
+        {NODE_ICONS[data.nodeType] && (
+          <span className="mr-1.5">{NODE_ICONS[data.nodeType]}</span>
+        )}
+        {data.label}
+      </div>
+      <Handle type="source" position={Position.Right} className="!w-2 !h-2 !bg-slate-400 !border-white" />
+    </>
   )
 }
 
@@ -73,13 +84,13 @@ function autoLayout(
   for (const n of graphNodes) {
     const layer = LAYER_X[n.type] ?? 350
     const idx = yOffsets[n.type] ?? 0
-    yOffsets[n.type] = (yOffsets[n.type] ?? 0) + 1
+    yOffsets[n.type] = idx + 1
     const spacing = n.type === "gene" ? 100 : 120
     const colCount = (byType[n.type] ?? []).length || 1
     const totalHeight = (colCount - 1) * spacing
     positions.set(n.id, {
-      x: layer + (Math.random() * 40 - 20),
-      y: totalHeight / 2 + idx * spacing,
+      x: layer,
+      y: idx * spacing - totalHeight / 2,
     })
   }
 
@@ -106,6 +117,8 @@ export function NetworkGraph({ nodes: graphNodes = [], edges: graphEdges = [], l
           type: "custom",
           position: { x: pos.x, y: pos.y },
           data: { label: n.label, nodeType: n.type },
+          sourcePosition: Position.Right,
+          targetPosition: Position.Left,
         }
       }),
     [graphNodes, positions]
@@ -113,16 +126,20 @@ export function NetworkGraph({ nodes: graphNodes = [], edges: graphEdges = [], l
 
   const initialEdges: Edge[] = useMemo(
     () =>
-      graphEdges.map((e, i) => ({
-        id: `e-${i}`,
-        source: e.source,
-        target: e.target,
-        animated: true,
-        style: { stroke: "#0F766E", strokeWidth: 2, opacity: 0.5 },
-        markerEnd: { type: MarkerType.ArrowClosed, color: "#0F766E" },
-        label: `${(e.weight * 100).toFixed(0)}%`,
-        labelStyle: { fontSize: 9, fill: "#64748B" },
-      })),
+      graphEdges.map((e, i) => {
+        const color = EDGE_COLORS[e.type] || "#64748B"
+        return {
+          id: `e-${i}`,
+          source: e.source,
+          target: e.target,
+          type: "smoothstep",
+          animated: true,
+          style: { stroke: color, strokeWidth: 2, opacity: 0.6 },
+          markerEnd: { type: MarkerType.ArrowClosed, color },
+          label: `${(e.weight * 100).toFixed(0)}%`,
+          labelStyle: { fontSize: 9, fill: "#64748B" },
+        }
+      }),
     [graphEdges]
   )
 
@@ -147,23 +164,56 @@ export function NetworkGraph({ nodes: graphNodes = [], edges: graphEdges = [], l
   }
 
   return (
-    <div className="w-full h-[400px] rounded-2xl overflow-hidden border border-border/50">
-      <ReactFlow
-        nodes={initialNodes}
-        edges={initialEdges}
-        nodeTypes={nodeTypes}
-        fitView
-        attributionPosition="bottom-left"
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background color="#E2E8F0" gap={20} size={1} />
-        <Controls showInteractive={false} className="rounded-xl shadow-soft" />
-        <MiniMap
-          nodeColor={(node) => NODE_COLORS[(node.data as any)?.nodeType] || "#64748B"}
-          maskColor="rgba(248, 250, 252, 0.8)"
-          className="rounded-xl"
-        />
-      </ReactFlow>
+    <div className="space-y-4">
+      <div className="w-full h-[620px] rounded-2xl overflow-hidden border border-border/50">
+        <ReactFlow
+          nodes={initialNodes}
+          edges={initialEdges}
+          nodeTypes={nodeTypes}
+          fitView
+          fitViewOptions={{ padding: 0.25, minZoom: 0.35, maxZoom: 1.2 }}
+          attributionPosition="bottom-left"
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background color="#E2E8F0" gap={20} size={1} />
+          <Controls showInteractive={false} className="rounded-xl shadow-soft" />
+        </ReactFlow>
+      </div>
+
+      <div className="grid gap-4 text-xs text-muted md:grid-cols-2">
+        <div>
+          <p className="mb-2 font-semibold text-foreground">Node Colors</p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {[
+              ["drug", "Drug / compound"],
+              ["gene", "Gene target"],
+              ["pathway", "Biological pathway"],
+              ["disease", "Disease / indication"],
+            ].map(([type, label]) => (
+              <span key={type} className="inline-flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: NODE_COLORS[type] }} />
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-2 font-semibold text-foreground">Edge Meaning</p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {[
+              ["binds", "Drug binds gene"],
+              ["participates", "Gene participates in pathway"],
+              ["associates", "Gene associates with disease"],
+            ].map(([type, label]) => (
+              <span key={type} className="inline-flex items-center gap-2">
+                <span className="h-0.5 w-7 rounded-full" style={{ backgroundColor: EDGE_COLORS[type] }} />
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

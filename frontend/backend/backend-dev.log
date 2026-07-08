@@ -1,0 +1,5 @@
+
+> drug-repurposing-backend@1.0.0 dev
+> node --watch src/index.js
+
+Server running on http://localhost:8000

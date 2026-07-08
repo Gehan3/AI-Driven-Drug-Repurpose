@@ -1,4 +1,5 @@
 import { Router } from "express"
+import { searchEntities } from "./hetionetEntities.js"
 
 const MOCK_DISEASE_INFO = {
   "Alzheimer's Disease": {
@@ -21,25 +22,16 @@ const MOCK_DISEASE_INFO = {
   },
 }
 
-const MOCK_DISEASES = [
-  "Alzheimer's Disease", "Parkinson's Disease", "Type 2 Diabetes",
-  "Breast Cancer", "Colorectal Cancer", "Rheumatoid Arthritis",
-  "Multiple Sclerosis", "COVID-19", "Glioblastoma", "Hepatitis C",
-  "HIV/AIDS", "Lupus Erythematosus", "Crohn's Disease", "Asthma",
-  "Myocardial Infarction",
-]
-
 export const diseasesRouter = Router()
 
 diseasesRouter.get("/diseases", (req, res) => {
-  const { search } = req.query
-  if (search) {
-    const results = MOCK_DISEASES.filter((d) =>
-      d.toLowerCase().includes(search.toLowerCase())
-    )
-    return res.json({ diseases: results, total: results.length })
-  }
-  res.json({ diseases: MOCK_DISEASES, total: MOCK_DISEASES.length })
+  const { search, name, limit } = req.query
+  const { results, total } = searchEntities("disease", search || name || "", limit)
+  res.json({
+    diseases: results.map((disease) => disease.name),
+    items: results,
+    total,
+  })
 })
 
 diseasesRouter.get("/disease/info", (req, res) => {

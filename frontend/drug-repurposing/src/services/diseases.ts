@@ -1,4 +1,3 @@
-import { MOCK_DISEASE_INFO, MOCK_DISEASES } from "@/lib/mock-data"
 import type { DiseaseInfo } from "@/types"
 
 const API_BASE = import.meta.env.VITE_API_URL || ""
@@ -15,14 +14,24 @@ export async function getDiseaseInformation(
       return await response.json()
     }
   } catch (error) {
-    console.warn("API not available, using mock data:", error)
+    console.warn("Disease information API not available:", error)
   }
-  return MOCK_DISEASE_INFO[diseaseName] || null
+  return null
 }
 
 export async function searchDiseases(query: string): Promise<string[]> {
-  await new Promise((r) => setTimeout(r, 100))
-  return MOCK_DISEASES.filter((d) =>
-    d.toLowerCase().includes(query.toLowerCase())
-  )
+  try {
+    if (API_BASE) {
+      const response = await fetch(
+        `${API_BASE}/api/diseases?search=${encodeURIComponent(query)}&limit=100`
+      )
+      if (!response.ok) throw new Error(`API error: ${response.status}`)
+      const data: { diseases?: string[] } = await response.json()
+      return data.diseases || []
+    }
+  } catch (error) {
+    console.warn("Disease search API not available:", error)
+  }
+
+  return []
 }

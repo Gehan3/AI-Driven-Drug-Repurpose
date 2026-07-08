@@ -1,4 +1,5 @@
 import { Router } from "express"
+import { searchEntities } from "./hetionetEntities.js"
 
 const MOCK_DRUG_INFO = {
   Metformin: {
@@ -25,23 +26,16 @@ const MOCK_DRUG_INFO = {
   },
 }
 
-const MOCK_DRUGS = [
-  "Metformin", "Rapamycin", "Imatinib", "Rituximab", "Tocilizumab",
-  "Doxycycline", "Valproic Acid", "Aspirin", "Curcumin", "Resveratrol",
-  "Minocycline", "Lithium", "Tamoxifen", "Bevacizumab", "Methotrexate",
-]
-
 export const drugsRouter = Router()
 
 drugsRouter.get("/drugs", (req, res) => {
-  const { search } = req.query
-  if (search) {
-    const results = MOCK_DRUGS.filter((d) =>
-      d.toLowerCase().includes(search.toLowerCase())
-    )
-    return res.json({ drugs: results, total: results.length })
-  }
-  res.json({ drugs: MOCK_DRUGS, total: MOCK_DRUGS.length })
+  const { search, name, limit } = req.query
+  const { results, total } = searchEntities("drug", search || name || "", limit)
+  res.json({
+    drugs: results.map((drug) => drug.name),
+    items: results,
+    total,
+  })
 })
 
 drugsRouter.get("/drug/info", (req, res) => {
