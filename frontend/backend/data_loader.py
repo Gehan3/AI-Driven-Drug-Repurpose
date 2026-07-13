@@ -2,6 +2,7 @@ import pandas as pd
 from pathlib import Path
 import gzip
 
+BASE_DIR = Path(__file__).resolve().parent
 if (BASE_DIR / "hetionet-data").exists():
     HETIONET_DIR = BASE_DIR / "hetionet-data" / "hetnet" / "tsv"
 else:
