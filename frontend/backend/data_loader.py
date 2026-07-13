@@ -2,11 +2,8 @@ import pandas as pd
 from pathlib import Path
 import gzip
 
-BASE_DIR = Path(__file__).resolve().parent
-if (BASE_DIR / "hetionet-data").exists():
-    HETIONET_DIR = BASE_DIR / "hetionet-data" / "hetnet" / "tsv"
-else:
-    HETIONET_DIR = BASE_DIR / "frontend" / "hetionet-data" / "hetnet" / "tsv"
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+HETIONET_DIR = BASE_DIR / "frontend" / "hetionet-data" / "hetnet" / "tsv"
 def load_data():
     nodes = pd.read_csv(
         HETIONET_DIR / "hetionet-v1.0-nodes.tsv",
