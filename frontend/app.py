@@ -21,7 +21,7 @@ if st.button("بحث واستعلام 🚀"):
         
         try:
             response = requests.post(webhook_url, json=payload)
-            if response.status_config == 200:
+            if response.status_code == 200:
                 result_data = response.json()
                 st.success("تم استقبال البيانات بنجاح!")
                 st.json(result_data)
