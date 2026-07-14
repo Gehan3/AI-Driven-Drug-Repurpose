@@ -2,7 +2,7 @@ import pandas as pd
 from pathlib import Path
 import gzip
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 HETIONET_DIR = BASE_DIR / "frontend" / "hetionet-data" / "hetnet" / "tsv"
 def load_data():
     nodes = pd.read_csv(
@@ -17,6 +17,7 @@ def load_data():
         low_memory=False,
     )
     return nodes, edges
+
 
 def get_drugs(nodes):
     return nodes[nodes["kind"] == "Compound"][["id", "name"]].reset_index(drop=True)
