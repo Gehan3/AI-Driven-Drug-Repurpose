@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-HETIONET_DIR = Path(__file__).resolve().parent.parent / "hetionet-data" / "hetnet" / "tsv"
+HETIONET_DIR = Path(__file__).resolve().parent / "hetionet-data" / "hetnet" / "tsv"
 GRAPH_CACHE_FILE = HETIONET_DIR / "graph_cache.pkl"
 
 
