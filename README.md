@@ -17,10 +17,8 @@ AI-DRIVEN-DRUG-REPURPOSE/
 │   └── main.py                     # نقطة التشغيل الأساسية
 │
 ├── backend/                        # سيرفر الـ FastAPI أو الـ Backend الخاص بكِ
-│   └── ...                         # ملفات السيرفر
 │
 ├── frontend/                       # واجهة الـ Streamlit أو الـ UI
-│   └── ...                         # ملفات الواجهة
 │
 ├── assets/                         # الصور والرسوم البيانية (مثل Fig. 1 و Fig. 2 للبحث)
 │
