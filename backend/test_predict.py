@@ -12,7 +12,7 @@ import sys
 import json
 
 sys.path.insert(0, ".")
-from frontend.predict import (
+from predict import (
     get_graph,
     find_diseases_for_drug,
     find_drugs_for_disease,
@@ -183,7 +183,7 @@ class MockBadResult:
         return default
 
 try:
-    from frontend.predict import main as predict_main
+    from predict import main as predict_main
 except ImportError:
     predict_main = None
 
