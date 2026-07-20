@@ -2,21 +2,14 @@ import pandas as pd
 from pathlib import Path
 import gzip
 import os
+import io
+import requests
 BASE_DIR = Path(__file__).resolve().parent.parent
-HETIONET_DIR = BASE_DIR / "hetionet-data" / "hetionet" / "tsv"
+DATA_DIR = BASE_DIR / "hetionet-data" / "hetionet" / "tsv"
 
 def load_data():
-    nodes = pd.read_csv(
-        HETIONET_DIR / "hetionet-v1.0-nodes.tsv",
-        sep="\t",
-        low_memory=False,
-    )
-    edges = pd.read_csv(
-        HETIONET_DIR / "hetionet-v1.0-edges.sif.gz",
-        sep="\t",
-        compression="gzip",
-        low_memory=False,
-    )
+    nodes = pd.read_parquet(DATA_DIR / "nodes.parquet")
+    edges = pd.read_parquet(DATA_DIR / "edges.parquet")
     return nodes, edges
 
 def get_drugs(nodes):
