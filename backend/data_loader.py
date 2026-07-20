@@ -5,7 +5,7 @@ import os
 import io
 import requests
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = BASE_DIR / "hetionet-data" / "hetionet" / "tsv"
+DATA_DIR = BASE_DIR / "hetionet-data" / "hetnet" / "tsv"
 
 def load_data():
     nodes = pd.read_parquet(DATA_DIR / "nodes.parquet")
