@@ -1,8 +1,9 @@
 import pandas as pd
 from pathlib import Path
 import gzip
-
-HETIONET_DIR = Path(r"D:\Project Data\front end\hetionet-data\hetnet\tsv")
+import os
+BASE_DIR = Path(__file__).resolve().parent.parent
+HETIONET_DIR = BASE_DIR / "hetionet-data" / "hetionet" / "tsv"
 
 def load_data():
     nodes = pd.read_csv(
