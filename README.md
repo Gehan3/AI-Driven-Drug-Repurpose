@@ -69,7 +69,7 @@ AI-DRIVEN-DRUG-REPURPOSE/
 
      |||||||||
 
-## 🔬 Hetionet Sub-Network Architecture
+## 🔄🔬 Hetionet Sub-Network Architecture
 
 Hetionet integrates millions of biomedical concepts across multiple biological scales. Our core sub-network specifically isolates and targets paths connecting **Compounds** to **Diseases** through intermediary **Genes (Proteins)** and supporting metadata nodes.
 
@@ -109,3 +109,168 @@ To install all necessary dependencies for vector operations, graph modeling, and
 
 ```bash
 pip install -r requirements.txt
+
+
+## 📊 Hetionet Data Processing Pipeline
+$$\text{Compound} \xrightarrow{\text{CbG}} \text{Gene} \xrightarrow{\text{GrPW}} \text{Pathway} \xrightarrow{\text{GrPW}^{-1}} \text{Gene} \xrightarrow{\text{DaG}} \text{Disease}$$
+This section handles loading, processing, and optimizing the Hetionet dataset through four main stages:
+
+### 1. ✅ Data Loading
+* Imports essential libraries such as `os` and `pandas`.
+* Defines file paths for:
+  * **Nodes dataset (TSV format):** Contains biological entities like genes, diseases, and pathways.
+  * **Edges dataset (compressed `.gz` format):** Represents relationships between entities.
+* Loads both datasets into `pandas DataFrames` using:
+  * `read_csv()` with tab separation (`sep="\t"`) for TSV files.
+  * Automatic decompression using `compression="gzip"` for edge data.
+
+### 2. ✅ Data Format Conversion (Optimization)
+* Converts datasets into **Parquet format** (a columnar storage format optimized for high speed and efficient storage compared to CSV or TSV).
+* Uses the `fastparquet` engine for writing:
+  * `nodes_df.to_parquet()` for nodes data.
+  * `edges_df.to_parquet()` for edges data.
+* Significantly enhances future read/write operations.
+
+### 3. ✅ Exploratory Data Analysis (EDA)
+Performs basic data exploration to understand structure and relationships:
+* Identifies unique values:
+  * Node types using `nodes_df['kind'].unique()`
+  * Relationship types using `edges_df['metaedge'].unique()`
+* Displays sample data:
+  * First 5 rows of nodes and edges using `.head()`
+  * Filtered examples such as:
+    * Nodes where `kind == 'Pathway'`
+    * Edges where `metaedge == 'CrC'`
+
+### 4. ✅ Error Handling
+Includes robust error handling mechanisms:
+* `FileNotFoundError`: Triggered when input files are missing or paths are incorrect.
+* `Generic Exception`: Captures any unexpected runtime errors.
+
+## 💡 Why Device Configuration Documentation Matters
+
+Yes, including this section in your documentation is extremely valuable for several key reasons:
+
+### 1. Transparency & Reproducibility
+* Clearly documents the hardware requirements and environment specs needed to run or replicate your code.
+* Lets anyone reviewing your repository know whether the pipeline was designed for local CPU execution or heavy GPU acceleration.
+
+### 2. Troubleshooting & Environment Verification
+* Helps users or collaborators instantly diagnose hardware issues if a script fails (e.g., catching missing CUDA drivers or PyTorch installation mismatches).
+
+### 3. Professional Code Standards
+* High-end machine learning and data science repositories always specify device initialization to handle multi-GPU or CPU-only fallback scenarios gracefully.
+
+
+## 🚀 DREAMwalk: Optimized, Leak-Free, & GPU-Accelerated Pipeline
+
+This module implements a fully optimized, high-performance variant of the DREAMwalk framework designed for robust drug-disease link prediction.
+
+---
+
+### 🔄 Architecture Overview
+
+The pipeline transitions from slow, iterative graph traversal to vectorized matrix operations:
+
+```mermaid
+graph TD
+    A[Raw Hetionet Sub-Network] --> B[SciPy / CuPy CSR Sparse Matrix]
+    B --> C{Cross-Validation Split}
+    C -->|Strict Isolation| D[In-Fold Jaccard Similarities]
+    C -->|Zero Leakage| E[Test CtD Edges Removed]
+    D --> F[Vectorized Random Walks]
+    E --> F
+    F --> G[Gensim Word2Vec Embeddings]
+    G --> H[Full Compound × Disease Matrix]
+    H --> I[Batched XGBoost Inference]
+
+## ⚙️ DREAMwalk: Configuration Setup
+
+This section defines the global configuration parameters for the DREAMwalk pipeline, ensuring reproducibility, consistency, and centralized control over all model and training hyperparameters.
+
+---
+
+### 1. 🚶 Random Walk Parameters
+These control how graph random walks explore the network:
+* `walk_length = 100` → Number of steps per walk.
+* `num_walks = 10` → Number of walks generated per node.
+* `teleport_prob = 0.5` → Probability of random teleportation (enhances network exploration).
+* `p = 1.0, q = 1.0` → Neutral Node2Vec-style parameters ensuring unbiased random walk behavior.
+
+### 2. 🔤 Embedding Learning (Word2Vec)
+These parameters define how node embeddings are learned from the generated random walks:
+* `embed_dim = 128` → Dimensionality of the embedding vectors.
+* `window = 5` → Context window size for co-occurrence.
+* `min_count = 1` → Includes all nodes regardless of frequency.
+* `sg = 1` → Skip-Gram model architecture.
+* `workers = 4` → Parallel CPU threads for training.
+* `epochs = 5` → Number of training iterations.
+
+### 3. 🔀 Cross-Validation Setup
+* `n_folds = 10` → Uses Stratified K-Fold cross-validation for robust model evaluation.
+
+### 4. 🚀 XGBoost Model Parameters
+These control the final supervised link prediction stage:
+* `n_estimators = 300` → Number of boosting rounds.
+* `max_depth = 6` → Tree complexity control.
+* `learning_rate = 0.05` → Step size shrinkage to prevent overfitting.
+* `subsample = 0.8` → Row sampling ratio per tree.
+* `colsample_bytree = 0.8` → Feature sampling ratio per tree.
+* `eval_metric = "logloss"` → Optimization objective.
+* `random_state = 42` → Ensures deterministic results and reproducibility.
+* `n_jobs = -1` → Utilizes all available CPU cores.
+* `tree_method = "hist"` → Optimized histogram-based training algorithm.
+* `device = "cuda"` → Enables fast GPU acceleration if available.
+
+### 5. 🗂️ System-Level Settings
+* `random_seed = 42` → Ensures full reproducibility across runs.
+* `cache_dir = "./dreamwalk_cache"` → Dedicated directory for storing intermediate results (e.g., embeddings, graphs, and matrices).
+
+### 6. 🔒 Reproducibility Control
+To guarantee consistent and stable outputs across different environments:
+```python
+random.seed(CONFIG["random_seed"])
+np.random.seed(CONFIG["random_seed"])
+
+
+## 📂 Data Loading Pipeline (`load_hetionet_local`)
+
+This section documents the modular data loading function designed to ingest, filter, and prepare the Hetionet dataset for downstream machine learning workflows.
+
+---
+
+### 1. 🧩 Function Definition
+* **`def load_hetionet_local():`**
+  * Defines a reusable and modular function.
+  * Encapsulates all dataset loading logic into a single, clean entry point.
+  * Improves overall code organization, readability, and maintainability.
+
+### 2. ⚡ Loading Preprocessed Data (Parquet Format)
+The function loads two core preprocessed datasets:
+* **`nodes_df = pd.read_parquet("...nodes.parquet")`** → Contains biological entities (genes, diseases, compounds, and pathways).
+* **`edges_df = pd.read_parquet("...edges.parquet")`** → Contains relationships between entities in the heterogeneous graph.
+* **Why Parquet?**
+  * Significantly faster I/O performance compared to CSV or TSV formats.
+  * Reduced disk storage size.
+  * Highly optimized for heavy analytical workloads.
+
+### 3. 🎯 Filtering Biological Interactions (CtD)
+```python
+treats_df = edges_df[edges_df['metaedge'] == 'CtD'].copy()
+
+
+## 🕸️ `SparseGraph`: Advanced High-Performance Graph Architecture
+
+```mermaid
+graph TD
+    A[Raw Data / Pandas DataFrames] -->|build_graph| B[SparseGraph Initialization]
+    B --> C[Node IDs & id2idx Mapping]
+    B --> D[CSR Adjacency Matrix]
+    D --> E[Bidirectional Edge Construction]
+    E --> F[Padded Neighbor Precomputation]
+    F --> G[Vectorized Random Walk Ready]
+    
+    H[Cross-Validation Split] -->|remove_edges| I[CSR to COO Conversion]
+    I --> J[Bidirectional Removal Set]
+    J --> K[Boolean Mask Filtering]
+    K --> L[New Isolated G_train SparseGraph]
